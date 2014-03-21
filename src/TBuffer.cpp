@@ -186,6 +186,8 @@ TBuffer::TBuffer( Host * pH )
     _element->href = "";
     _element->hint = "";
     mMXP_Elements["SEND"] = _element;
+
+    mCodec = QTextCodec::codecForName("GBK");
 }
 
 void TBuffer::setBufferSize( int s, int batch )
@@ -817,19 +819,28 @@ inline int TBuffer::lookupColor( QString & s, int pos )
 }
 
 
-void TBuffer::translateToPlainText( std::string & s )
+void TBuffer::translateToPlainText( std::string & str )
 {
     speedAppend = 0;
     speedTP = 0;
     int numCodes=0;
     speedSequencer = 0;
     mUntriggered = lineBuffer.size()-1;
-    msLength = s.length();
+    msLength = str.length();
     mFormatSequenceRest="";
     int msPos = 0;
     QString packetTime = (QTime::currentTime()).toString("hh:mm:ss.zzz") + "   ";
     //bool firstChar = (lineBuffer.back().size() == 0); //FIXME
     if( msLength < 1 ) return;
+
+    if(mCodec == 0)
+    {
+        qDebug() << "[ERROR] mCodec == 0";
+        return;
+    }
+
+    QString s = mCodec->toUnicode(str.c_str());
+    msLength = s.length();
 
     while( true )
     {
@@ -838,7 +849,7 @@ void TBuffer::translateToPlainText( std::string & s )
         {
             return;
         }
-        char & ch = s[msPos];
+        const QChar & ch = s[msPos];
         if( ch == '\033' )
         {
             gotESC = true;
@@ -1378,7 +1389,7 @@ void TBuffer::translateToPlainText( std::string & s )
 
         const QString nothing = "";
         TChar stdCh;
-
+/*
         if( mMXP )
         {
             // ignore < and > inside of parameter strings
@@ -1825,9 +1836,9 @@ void TBuffer::translateToPlainText( std::string & s )
         if( mMXP_SEND_NO_REF_MODE )
         {
             mAssembleRef += ch;
-        }
+        }*/
 
-        COMMIT_LINE: if( ( ch == '\n' ) || ( ch == '\xff') || ( ch == '\r' ) )
+        COMMIT_LINE: if( ( ch == '\n' ) || ( ch == 0xe854) || ( ch == '\r' ) )
         {
             // MUD Zeilen werden immer am Zeilenanfang geschrieben
             if( lineBuffer.back().size() > 0 )
@@ -1848,7 +1859,7 @@ void TBuffer::translateToPlainText( std::string & s )
                 buffer.push_back( mMudBuffer );
                 dirty << true;
                 timeBuffer << (QTime::currentTime()).toString("hh:mm:ss.zzz") + "   ";
-                if( ch == '\xff' )
+                if( ch == 0xe854 )
                 {
                     promptBuffer.append( true );
                 }
@@ -1875,7 +1886,7 @@ void TBuffer::translateToPlainText( std::string & s )
                 buffer.back() = mMudBuffer;
                 dirty.back() = true;
                 timeBuffer.back() = QTime::currentTime().toString("hh:mm:ss.zzz") + "   ";
-                if( ch == '\xff' )
+                if( ch == 0xe854 )
                 {
                     promptBuffer.back() = true ;
                 }

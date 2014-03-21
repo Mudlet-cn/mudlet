@@ -717,6 +717,7 @@ void TTextEdit::drawForeground( QPainter & painter, const QRect & r )
     }
     QRect deleteRect = QRect( 0, from*mFontHeight, x2*mFontHeight, (y2+1)*mFontHeight);//rect.width(), rect.height()-from*mFontHeight );
     drawBackground( p, deleteRect, mBgColor );//QColor(rand()%255,rand()%255,rand()%255));//mBgColor );
+    QFontMetrics currentFontMetrics( mpHost->mDisplayFont );
     for( int i=from; i<=y2; i++ )
     {
         if( static_cast<int>(mpBuffer->buffer.size()) <= i+lineOffset )
@@ -731,9 +732,10 @@ void TTextEdit::drawForeground( QPainter & painter, const QRect & r )
         }
         int lineLength = mpBuffer->buffer[i+lineOffset].size() + timeOffset;
         //int doubleByteOffset = 0;
+        int offset = 0;
+        QString text;
         for( int i2=x1; i2<lineLength; )
         {
-            QString text;
             //bool doubleByte = false;
             if( i2 < timeOffset )
             {
@@ -815,15 +817,21 @@ void TTextEdit::drawForeground( QPainter & painter, const QRect & r )
                     }
                 }*/
 
-                textRect = QRect( mFontWidth * i2,
+                /*textRect = QRect( mFontWidth * i2,
                                   mFontHeight * i,
                                   mFontWidth * delta,
+                                  mFontHeight );*/
+                int textLen = currentFontMetrics.width(text);
+                textRect = QRect( offset,
+                                  mFontHeight * i,
+                                  textLen,
                                   mFontHeight );
                 if( f.invers || ( bgColor != mBgColor ) )
                 {
                     drawBackground( p, textRect, bgColor );
                 }
                 drawCharacters( p, textRect, text, f.bold, f.underline, f.italics, fgColor, bgColor );
+                offset += textLen;
                 i2+=delta;
             }
         }

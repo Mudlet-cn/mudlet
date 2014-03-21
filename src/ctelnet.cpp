@@ -71,7 +71,7 @@ cTelnet::cTelnet( Host * pH )
     mNeedDecompression = false;
     mWaitingForCompressedStreamToStart = false;
     // initialize default encoding
-    encoding = "UTF-8";
+    encoding = "GBK";
     encodingChanged(encoding);
     termType = "Mudlet 2.1.0";
     iac = iac2 = insb = false;
@@ -157,6 +157,7 @@ void cTelnet::connectIt(const QString &address, int port)
         mLF_ON_GA = mpHost->mLF_ON_GA;
         mFORCE_GA_OFF = mpHost->mFORCE_GA_OFF;
     }
+    mGA_Driver = false;
     if( socket.state() != QAbstractSocket::UnconnectedState )
     {
         socket.abort();
@@ -1722,7 +1723,10 @@ MAIN_LOOP_END: ;
                         mCommands = 0;
                     }
                 }
-                cleandata.push_back('\xff');
+                //cleandata.append((incomingDataCodec->fromUnicode(QChar('\xff'))).data());
+                //cleandata.push_back('\xff');
+                cleandata.push_back('\xfe');
+                cleandata.push_back('\x90');
                 recvdGA = false;
                 gotPrompt( cleandata );
                 cleandata = "";

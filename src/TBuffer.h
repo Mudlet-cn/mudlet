@@ -168,7 +168,7 @@ public:
     bool              mIgnoreTag;
     std::string       mSkip;
     bool              mParsingVar;
-    char              mOpenMainQuote;
+    QChar             mOpenMainQuote;
     bool              mMXP_SEND_NO_REF_MODE;
     std::string       mAssembleRef;
 
@@ -288,6 +288,8 @@ private:
     QString           mMudLine;
     std::deque<TChar> mMudBuffer;
     int               mCode[1024];//FIXME: potential overflow bug
+
+    QTextCodec *      mCodec;
 };
 
 #endif

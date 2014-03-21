@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>744</width>
-    <height>576</height>
+    <width>746</width>
+    <height>580</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -38,7 +38,7 @@
       <enum>QTabWidget::Rounded</enum>
      </property>
      <property name="currentIndex">
-      <number>0</number>
+      <number>2</number>
      </property>
      <widget class="QWidget" name="General">
       <property name="sizePolicy">
@@ -436,7 +436,7 @@
              <bool>false</bool>
             </property>
             <property name="fontFilters">
-             <set>QFontComboBox::MonospacedFonts</set>
+             <set>QFontComboBox::AllFonts</set>
             </property>
            </widget>
           </item>

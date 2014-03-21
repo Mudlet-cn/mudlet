@@ -3,8 +3,14 @@ CONFIG += uitools
 
 QMAKE_CXXFLAGS_RELEASE += -O3 -Wno-deprecated -Wno-unused-parameter
 QMAKE_CXXFLAGS_DEBUG += -O3 -Wno-deprecated -Wno-unused-parameter
-MOC_DIR = ./tmp
-OBJECTS_DIR = ./tmp
+release {
+    MOC_DIR = ./tmp
+    OBJECTS_DIR = ./tmp
+}
+debug {
+    MOC_DIR = ./tmpD
+    OBJECTS_DIR = ./tmpD
+}
 QT += network opengl phonon
 DEPENDPATH += .
 INCLUDEPATH += .
@@ -242,7 +248,8 @@ FORMS += ui/connection_profiles.ui \
 #}
 
 TEMPLATE = app
-TARGET = mudlet
+release:TARGET = mudlet
+debug:TARGET = mudletD
 RESOURCES = mudlet_alpha.qrc
 DISTFILES += paragraph.css
 unix: {
