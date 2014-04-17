@@ -164,14 +164,14 @@ bool TTrigger::setRegexCodeList( QStringList regexList, QList<int> propertyList 
         if( propertyList[i] == REGEX_PERL )
         {
             const char *error;
-            char * pattern = (char *) malloc( strlen( regexList[i].toLocal8Bit().data() ) + 48 );
-            strcpy( pattern, regexList[i].toLocal8Bit().data() );
+            char * pattern = (char *) malloc( strlen( regexList[i].toUtf8().data() ) + 48 );
+            strcpy( pattern, regexList[i].toUtf8().data() );
 
             int erroffset;
 
             pcre * re;
             re = pcre_compile( pattern,
-                               0,
+                               PCRE_UTF8,
                                &error,
                                &erroffset,
                                0 );
@@ -316,7 +316,7 @@ bool TTrigger::match_perl( char * subject, QString & toMatch, int regexNumber, i
 
     int subject_length = strlen( subject );
     int rc, i;
-    std::list<std::string> captureList;
+    std::list<QString> captureList;
     std::list<int> posList;
     //int numOfCaptureGroups = pcre_info( re, 0, 0 )*3;
     int ovector[300]; // 100 capture groups max (can be increase nbGroups=1/3 ovector
@@ -330,7 +330,7 @@ bool TTrigger::match_perl( char * subject, QString & toMatch, int regexNumber, i
                     0,
                     0,
                     ovector,
-                    100 );
+                    300 );
 
     if( rc < 0 )
     {
@@ -354,11 +354,13 @@ bool TTrigger::match_perl( char * subject, QString & toMatch, int regexNumber, i
         return false;
     }
 
+    char * prev = subject;
+    QString pos;
     for( i=0; i < rc; i++ )
     {
         char * substring_start = subject + ovector[2*i];
         int substring_length = ovector[2*i+1] - ovector[2*i];
-        std::string match;
+        QString match;
         if( substring_length < 1 )
         {
             captureList.push_back( match );
@@ -366,10 +368,22 @@ bool TTrigger::match_perl( char * subject, QString & toMatch, int regexNumber, i
             continue;
         }
 
-        match.append( substring_start, substring_length );
+        match += QString::fromUtf8( substring_start, substring_length );
         captureList.push_back( match );
-        posList.push_back( ovector[2*i] + posOffset );
-        if( mudlet::debugMode ){ TDebug(QColor(Qt::darkCyan),QColor(Qt::black))<<"capture group #"<<(i+1)<<" = ">>0; TDebug(QColor(Qt::darkMagenta),QColor(Qt::black))<<"<"<<match.c_str()<<">\n">>0;}
+        pos += QString::fromUtf8(prev, substring_start - prev);
+        posList.push_back( pos.size() + posOffset );
+        //posList.push_back( ovector[2*i] + posOffset );
+        if( mudlet::debugMode ){ TDebug(QColor(Qt::darkCyan),QColor(Qt::black))<<"capture group #"<<(i+1)<<" = ">>0; TDebug(QColor(Qt::darkMagenta),QColor(Qt::black))<<"<"<<match<<">\n">>0;}
+
+        if(i == 0)
+        {
+            prev = substring_start;
+        }
+        else
+        {
+            prev = substring_start + substring_length;
+            pos += match;
+        }
     }
     (void)pcre_fullinfo( re,
                          NULL,
@@ -451,19 +465,31 @@ bool TTrigger::match_perl( char * subject, QString & toMatch, int regexNumber, i
             char * substring_start = subject + ovector[2*i];
             int substring_length = ovector[2*i+1] - ovector[2*i];
 
-            std::string match;
+            QString match;
             if( substring_length < 1 )
             {
                 captureList.push_back( match );
                 posList.push_back( -1 );
                 continue;
             }
-            match.append( substring_start, substring_length );
+            match += QString::fromUtf8( substring_start, substring_length );
             captureList.push_back( match );
-            posList.push_back( ovector[2*i] + posOffset );
+            pos += QString::fromUtf8(prev, substring_start - prev);
+            posList.push_back( pos.size() + posOffset );
+            //posList.push_back( ovector[2*i] + posOffset );
             if( mudlet::debugMode )
             {
-                TDebug(QColor(Qt::darkCyan),QColor(Qt::black))<<"<regex mode: match all> capture group #"<<(i+1)<<" = ">>0; TDebug(QColor(Qt::darkMagenta),QColor(Qt::black))<<"<"<<match.c_str()<<">\n">>0;
+                TDebug(QColor(Qt::darkCyan),QColor(Qt::black))<<"<regex mode: match all> capture group #"<<(i+1)<<" = ">>0; TDebug(QColor(Qt::darkMagenta),QColor(Qt::black))<<"<"<<match<<">\n">>0;
+            }
+
+            if(i == 0)
+            {
+                prev = substring_start;
+            }
+            else
+            {
+                prev = substring_start + substring_length;
+                pos += match;
             }
         }
     }
@@ -481,13 +507,12 @@ END:
         int total = captureList.size();
         TConsole * pC = mpHost->mpConsole;
         pC->deselect();
-        std::list<std::string>::iterator its = captureList.begin();
+        std::list<QString>::iterator its = captureList.begin();
         std::list<int>::iterator iti = posList.begin();
         for( int i=1; iti!=posList.end(); ++iti, ++its, i++ )
         {
             int begin = *iti;
-            std::string & s = *its;
-            int length = s.size();
+            int length = (*its).size();
             if( total > 1 )
             {
                 // skip complete match in Perl /g option type of triggers
@@ -525,12 +550,12 @@ END:
              if( captureList.size() > 1 )
              {
                  int total = captureList.size();
-                 std::list<std::string>::iterator its = captureList.begin();
+                 std::list<QString>::iterator its = captureList.begin();
                  std::list<int>::iterator iti = posList.begin();
                  for( int i=1; iti!=posList.end(); ++iti, ++its, i++ )
                  {
                      int begin = *iti;
-                     std::string & s = *its;
+                     QString & s = *its;
                      if( total > 1 )
                      {
                          // skip complete match in Perl /g option type of triggers
@@ -564,9 +589,9 @@ bool TTrigger::match_begin_of_line_substring( QString & toMatch, QString & regex
 {
     if( toMatch.startsWith( regex ) )
     {
-        std::list<std::string> captureList;
+        std::list<QString> captureList;
         std::list<int> posList;
-        captureList.push_back( regex.toLatin1().data() );
+        captureList.push_back( regex );
         posList.push_back( 0 + posOffset );
         if( mudlet::debugMode ){ TDebug(QColor(Qt::darkCyan),QColor(Qt::black))<<"Trigger name="<<mName<<"("<<mRegexCodeList.value(regexNumber)<<") matched.\n">>0;}
         if( mIsColorizerTrigger )
@@ -578,13 +603,12 @@ bool TTrigger::match_begin_of_line_substring( QString & toMatch, QString & regex
             int g2 = mFgColor.green();
             int b2 = mFgColor.blue();
             TConsole * pC = mpHost->mpConsole;
-            std::list<std::string>::iterator its = captureList.begin();
+            std::list<QString>::iterator its = captureList.begin();
             std::list<int>::iterator iti = posList.begin();
             for( ; iti!=posList.end(); ++iti, ++its )
             {
                 int begin = *iti;
-                std::string & s = *its;
-                int length = s.size();
+                int length = (*its).size();
                 pC->selectSection( begin, length );
                 pC->setBgColor( r1, g1, b1 );
                 pC->setFgColor( r2, g2, b2 );
@@ -618,7 +642,7 @@ bool TTrigger::match_begin_of_line_substring( QString & toMatch, QString & regex
 }
 
 inline void TTrigger::updateMultistates( int regexNumber,
-                                         std::list<std::string> & captureList,
+                                         std::list<QString> & captureList,
                                          std::list<int> & posList )
 {
     if( regexNumber == 0 )
@@ -653,19 +677,19 @@ inline void TTrigger::updateMultistates( int regexNumber,
     }
 }
 
-inline void TTrigger::filter( std::string & capture, int & posOffset )
+inline void TTrigger::filter( QString & capture, int & posOffset )
 {
     if( capture.size() < 1 ) return;
     char * filterSubject = (char *) malloc( capture.size() + 2048 );
     if( filterSubject )
     {
-        strcpy( filterSubject, capture.c_str() );
+        strcpy( filterSubject, capture.toUtf8().data() );
     }
     else
     {
         return;
     }
-    QString text = capture.c_str();
+    QString text = capture;
     typedef list<TTrigger *>::const_iterator I;
     for( I it = mpMyChildrenList->begin(); it != mpMyChildrenList->end(); it++)
     {
@@ -679,15 +703,15 @@ bool TTrigger::match_substring( QString & toMatch, QString & regex, int regexNum
     int where = toMatch.indexOf( regex );
     if( where != -1 )
     {
-        std::list<std::string> captureList;
+        std::list<QString> captureList;
         std::list<int> posList;
-        captureList.push_back( regex.toLatin1().data() );
+        captureList.push_back( regex );
         posList.push_back( where + posOffset );
         if( mPerlSlashGOption )
         {
             while( (where = toMatch.indexOf( regex, where + 1 )) != -1 )
             {
-                captureList.push_back( regex.toLatin1().data() );
+                captureList.push_back( regex );
                 posList.push_back( where + posOffset );
             }
         }
@@ -702,13 +726,12 @@ bool TTrigger::match_substring( QString & toMatch, QString & regex, int regexNum
             int b2 = mFgColor.blue();
             TConsole * pC = mpHost->mpConsole;
             pC->deselect();
-            std::list<std::string>::iterator its = captureList.begin();
+            std::list<QString>::iterator its = captureList.begin();
             std::list<int>::iterator iti = posList.begin();
             for( ; iti!=posList.end(); ++iti, ++its )
             {
                 int begin = *iti;
-                std::string & s = *its;
-                int length = s.size();
+                int length = (*its).size();
                 pC->selectSection( begin, length );
                 pC->setBgColor( r1, g1, b1 );
                 pC->setFgColor( r2, g2, b2 );
@@ -748,7 +771,7 @@ bool TTrigger::match_color_pattern( int line, int regexNumber )
     //bool bgColorMatch = false;
     //bool fgColorMatch = false;
     bool canExecute = false;
-    std::list<std::string> captureList;
+    std::list<QString> captureList;
     std::list<int> posList;
     if( line >= static_cast<int>(mpHost->mpConsole->buffer.buffer.size()) ) return false;
     std::deque<TChar> & bufferLine = mpHost->mpConsole->buffer.buffer[line];
@@ -788,11 +811,11 @@ bool TTrigger::match_color_pattern( int line, int regexNumber )
         {
             if( matchBegin > -1 )
             {
-                std::string got;
+                QString got;
                 if( matching )
-                    got = lineBuffer.mid(matchBegin, pos-matchBegin+1).toLatin1().data();
+                    got = lineBuffer.mid(matchBegin, pos-matchBegin+1);
                 else
-                    got = lineBuffer.mid(matchBegin, pos-matchBegin).toLatin1().data();
+                    got = lineBuffer.mid(matchBegin, pos-matchBegin);
                 captureList.push_back( got );
                 posList.push_back( matchBegin );
                 matchBegin = -1;
@@ -814,13 +837,13 @@ bool TTrigger::match_color_pattern( int line, int regexNumber )
             int b2 = mFgColor.blue();
             TConsole * pC = mpHost->mpConsole;
             pC->deselect();
-            std::list<std::string>::iterator its = captureList.begin();
+            std::list<QString>::iterator its = captureList.begin();
             std::list<int>::iterator iti = posList.begin();
             for( ; iti!=posList.end(); ++iti, ++its )
             {
                 int begin = *iti;
-                std::string & s = *its;
-                cout<<"CTgot<"<<s<<"> bis:"<<s.size()<<endl;
+                QString & s = *its;
+                //cout<<"CTgot<"<<s<<"> bis:"<<s.size()<<endl;
 
                 int length = s.size();
                 pC->selectSection( begin, length );
@@ -845,7 +868,7 @@ bool TTrigger::match_color_pattern( int line, int regexNumber )
             {
                 if( captureList.size() > 0 )
                 {
-                    typedef std::list<std::string>::iterator IT;
+                    typedef std::list<QString>::iterator IT;
                     typedef std::list<int>::iterator IT2;
                     IT it1 = captureList.begin();
                     IT2 it2 = posList.begin();
@@ -880,7 +903,7 @@ bool TTrigger::match_line_spacer( int regexNumber )
                         TDebug(QColor(Qt::darkYellow),QColor(Qt::black)) << "match state " << k << "/" << mConditionMap.size() <<" condition #" << regexNumber << "=true (" << regexNumber+1 << "/" << mRegexCodeList.size() << ") line spacer=" << mRegexCodeList.value(regexNumber) <<"lines\n" >> 0;
                     }
                     (*it).second->conditionMatched();
-                    std::list<string> captureList;
+                    std::list<QString> captureList;
                     std::list<int> posList;
                     (*it).second->multiCaptureList.push_back( captureList );
                     (*it).second->multiCapturePosList.push_back( posList );
@@ -901,7 +924,7 @@ bool TTrigger::match_lua_code( int regexNumber )
         if( mudlet::debugMode ){ TDebug(QColor(Qt::yellow),QColor(Qt::black))<<"Trigger name="<<mName<<"("<<mRegexCodeList.value(regexNumber)<<") matched.\n">>0;}
         if( mIsMultiline )
         {
-            std::list<std::string> captureList;
+            std::list<QString> captureList;
             std::list<int> posList;
             updateMultistates( regexNumber, captureList, posList );
             return true;
@@ -918,9 +941,9 @@ bool TTrigger::match_exact_match( QString & toMatch, QString & line, int regexNu
     if( text.endsWith(QChar('\n')) ) text.chop(1); //TODO: speed optimization
     if( text == line )
     {
-        std::list<std::string> captureList;
+        std::list<QString> captureList;
         std::list<int> posList;
-        captureList.push_back( line.toLatin1().data() );
+        captureList.push_back( line );
         posList.push_back( 0 + posOffset );
         if( mudlet::debugMode ) {TDebug(QColor(Qt::yellow),QColor(Qt::black))<<"Trigger name="<<mName<<"("<<mRegexCodeList.value(regexNumber)<<") matched.\n">>0;}
         if( mIsColorizerTrigger )
@@ -932,13 +955,12 @@ bool TTrigger::match_exact_match( QString & toMatch, QString & line, int regexNu
             int g2 = mFgColor.green();
             int b2 = mFgColor.blue();
             TConsole * pC = mpHost->mpConsole;
-            std::list<std::string>::iterator its = captureList.begin();
+            std::list<QString>::iterator its = captureList.begin();
             std::list<int>::iterator iti = posList.begin();
             for( ; iti!=posList.end(); ++iti, ++its )
             {
                 int begin = *iti;
-                std::string & s = *its;
-                int length = s.size();
+                int length = (*its).size();
                 pC->selectSection( begin, length );
                 pC->setBgColor( r1, g1, b1 );
                 pC->setFgColor( r2, g2, b2 );
@@ -1089,18 +1111,18 @@ bool TTrigger::match( char * subject, QString & toMatch, int line, int posOffset
                     pL->clearCaptureGroups();
                     if( mFilterTrigger )
                     {
-                        std::list< std::list<std::string> > multiCaptureList;
+                        std::list< std::list<QString> > multiCaptureList;
                         multiCaptureList = (*it).second->multiCaptureList;
                         if( multiCaptureList.size() > 0 )
                         {
-                            std::list< std::list<std::string> >::iterator mit = multiCaptureList.begin();
+                            std::list< std::list<QString> >::iterator mit = multiCaptureList.begin();
                             for( ; mit!=multiCaptureList.end(); mit++, k++ )
                             {
                                 int total = (*mit).size();
-                                std::list<std::string>::iterator its = (*mit).begin();
+                                std::list<QString>::iterator its = (*mit).begin();
                                 for( int i=1; its!=(*mit).end(); ++its, i++ )
                                 {
-                                    std::string s = *its;
+                                    QString s = *its;
                                     int p = 0;
                                     if( total > 1 )
                                     {

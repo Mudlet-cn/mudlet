@@ -84,7 +84,7 @@ public:
     }
 
     int                                 mSpacer;
-    std::list< std::list<std::string> > multiCaptureList;
+    std::list< std::list<QString> >     multiCaptureList;
     std::list< std::list<int> >         multiCapturePosList;
     int                                 mNumberOfConditions;
     int                                 mNextCondition;

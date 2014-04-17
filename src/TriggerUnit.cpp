@@ -271,8 +271,8 @@ void TriggerUnit::processDataStream( QString & data, int line )
 {
     if( data.size() > 0 )
     {
-        char * subject = (char *) malloc( strlen( data.toLocal8Bit().data() ) + 1 );
-        strcpy( subject, data.toLocal8Bit().data() );
+        char * subject = (char *) malloc( strlen( data.toUtf8().data() ) + 1 );
+        strcpy( subject, data.toUtf8().data() );
 
         typedef list<TTrigger *>::const_iterator I;
         for( I it = mTriggerRootNodeList.begin(); it != mTriggerRootNodeList.end(); it++)

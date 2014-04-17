@@ -157,9 +157,9 @@ private:
 
                                            TTrigger(){};
     void                                   updateMultistates( int regexNumber,
-                                                              std::list<std::string> & captureList,
+                                                              std::list<QString> & captureList,
                                                               std::list<int> & posList );
-    void                                   filter( std::string &, int & );
+    void                                   filter(QString &, int & );
 
 
     QList<int>                             mRegexCodePropertyList;

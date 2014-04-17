@@ -116,7 +116,7 @@ bool TAlias::match( QString & toMatch )
 
     int subject_length = strlen( subject );
     int rc, i;
-    std::list<std::string> captureList;
+    std::list<QString> captureList;
     std::list<int> posList;
     int ovector[300]; // 100 capture groups max (can be increase nbGroups=1/3 ovector
 
@@ -168,17 +168,17 @@ bool TAlias::match( QString & toMatch )
         char * substring_start = subject + ovector[2*i];
         int substring_length = ovector[2*i+1] - ovector[2*i];
 
-        std::string match;
+        QString match;
         if( substring_length < 1 )
         {
             captureList.push_back( match );
             posList.push_back( -1 );
             continue;
         }
-        match.append( substring_start, substring_length );
+        match += QString::fromLocal8Bit( substring_start, substring_length );
         captureList.push_back( match );
         posList.push_back( ovector[2*i] );
-        if( mudlet::debugMode ) {TDebug(QColor(Qt::darkCyan),QColor(Qt::black))<<"Alias: capture group #"<<(i+1)<<" = ">>0; TDebug(QColor(Qt::darkMagenta),QColor(Qt::black))<<"<"<<match.c_str()<<">\n">>0;}
+        if( mudlet::debugMode ) {TDebug(QColor(Qt::darkCyan),QColor(Qt::black))<<"Alias: capture group #"<<(i+1)<<" = ">>0; TDebug(QColor(Qt::darkMagenta),QColor(Qt::black))<<"<"<<match<<">\n">>0;}
     }
     (void)pcre_fullinfo( re,
                          NULL,
@@ -253,17 +253,17 @@ bool TAlias::match( QString & toMatch )
         {
             char * substring_start = subject + ovector[2*i];
             int substring_length = ovector[2*i+1] - ovector[2*i];
-            std::string match;
+            QString match;
             if( substring_length < 1 )
             {
                 captureList.push_back( match );
                 posList.push_back( -1 );
                 continue;
             }
-            match.append( substring_start, substring_length );
+            match += QString::fromLocal8Bit( substring_start, substring_length );
             captureList.push_back( match );
             posList.push_back( ovector[2*i] );
-            if( mudlet::debugMode ) {TDebug(QColor(Qt::darkCyan),QColor(Qt::black))<<"capture group #"<<(i+1)<<" = ">>0; TDebug(QColor(Qt::darkMagenta),QColor(Qt::black))<<"<"<<match.c_str()<<">\n">>0;}
+            if( mudlet::debugMode ) {TDebug(QColor(Qt::darkCyan),QColor(Qt::black))<<"capture group #"<<(i+1)<<" = ">>0; TDebug(QColor(Qt::darkMagenta),QColor(Qt::black))<<"<"<<match<<">\n">>0;}
         }
     }
 

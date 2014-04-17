@@ -586,7 +586,7 @@ int TLuaInterpreter::selectCaptureGroup( lua_State * L )
     if( luaNumOfMatch < static_cast<int>(pHost->getLuaInterpreter()->mCaptureGroupList.size()) )
     {
         TLuaInterpreter * pL = pHost->getLuaInterpreter();
-        std::list<std::string>::iterator its = pL->mCaptureGroupList.begin();
+        std::list<QString>::iterator its = pL->mCaptureGroupList.begin();
         std::list<int>::iterator iti = pL->mCaptureGroupPosList.begin();
 
         for( int i=0; iti!=pL->mCaptureGroupPosList.end(); ++iti,++i )
@@ -599,8 +599,7 @@ int TLuaInterpreter::selectCaptureGroup( lua_State * L )
         }
 
         int begin = *iti;
-        std::string & s = *its;
-        int length = s.size();
+        int length = (*its).size();
         //cout << "selectSection("<<begin<<", "<<length<<")"<<endl;
         if( mudlet::debugMode ) {TDebug(QColor(Qt::white),QColor(Qt::red))<<"selectCaptureGroup("<<begin<<", "<<length<<")\n">>0;}
         int pos = pHost->mpConsole->selectSection( begin, length );
@@ -8296,7 +8295,7 @@ int TLuaInterpreter::Echo( lua_State *L )
     QString name;
     if( n == 1 )
     {
-        txt = a1.c_str();
+        txt = QString::fromUtf8(a1.c_str());
         pHost->mpConsole->echo( txt );
     }
 
@@ -8304,8 +8303,8 @@ int TLuaInterpreter::Echo( lua_State *L )
 
     else
     {
-        txt = a2.c_str();
-        name = a1.c_str();
+        txt = QString::fromUtf8(a2.c_str());
+        name = QString::fromUtf8(a1.c_str());
         mudlet::self()->echoWindow( pHost, name, txt );
     }
 
@@ -8944,7 +8943,7 @@ int TLuaInterpreter::sendRaw( lua_State * L )
         }
     }
     Host * pHost = TLuaInterpreter::luaInterpreterMap[L];
-    pHost->send( QString(luaSendText.c_str()), wantPrint, true );
+    pHost->send( QString::fromUtf8(luaSendText.c_str()), wantPrint, true );
     return 0;
 }
 
@@ -9112,7 +9111,7 @@ bool TLuaInterpreter::compile( QString & code, QString & errorMsg )
         return false;
     }
 
-    int error = luaL_dostring( L, code.toLatin1().data() );
+    int error = luaL_dostring( L, code.toUtf8().data() );
     QString n;
     if( error != 0 )
     {
@@ -9136,7 +9135,7 @@ bool TLuaInterpreter::compile( QString & code, QString & errorMsg )
     else return false;
 }
 
-void TLuaInterpreter::setMultiCaptureGroups( const std::list< std::list<std::string> > & captureList,
+void TLuaInterpreter::setMultiCaptureGroups( const std::list< std::list<QString> > & captureList,
                                              const std::list< std::list<int> > & posList )
 {
     mMultiCaptureGroupList = captureList;
@@ -9157,7 +9156,7 @@ void TLuaInterpreter::setMultiCaptureGroups( const std::list< std::list<std::str
     }*/
 }
 
-void TLuaInterpreter::setCaptureGroups( const std::list<std::string> & captureList, const std::list<int> & posList )
+void TLuaInterpreter::setCaptureGroups( const std::list<QString> & captureList, const std::list<int> & posList )
 {
     mCaptureGroupList = captureList;
     mCaptureGroupPosList = posList;
@@ -9433,12 +9432,12 @@ bool TLuaInterpreter::call( QString & function, QString & mName )
 
         // set values
         int i=1; // Lua indexes start with 1 as a general convention
-        std::list<std::string>::iterator it = mCaptureGroupList.begin();
+        std::list<QString>::iterator it = mCaptureGroupList.begin();
         for( ; it!=mCaptureGroupList.end(); it++, i++ )
         {
             //if( (*it).length() < 1 ) continue; //have empty capture groups to be undefined keys i.e. machts[emptyCapGroupNumber] = nil otherwise it's = "" i.e. an empty string
             lua_pushnumber( L, i );
-            lua_pushstring( L, (*it).c_str() );
+            lua_pushstring( L, (*it).toUtf8().data() );
             lua_settable( L, -3 );
         }
         lua_setglobal( L, "matches" );
@@ -9553,7 +9552,7 @@ bool TLuaInterpreter::callMulti( QString & function, QString & mName )
     if( mMultiCaptureGroupList.size() > 0 )
     {
         int k=1; // Lua indexes start with 1 as a general convention
-        std::list< std::list<std::string> >::iterator mit = mMultiCaptureGroupList.begin();
+        std::list< std::list<QString> >::iterator mit = mMultiCaptureGroupList.begin();
         lua_newtable( L );//multimatches
         for( ; mit!=mMultiCaptureGroupList.end(); mit++, k++ )
         {
@@ -9561,11 +9560,11 @@ bool TLuaInterpreter::callMulti( QString & function, QString & mName )
             lua_pushnumber( L, k );
             lua_newtable( L );//regex-value => table matches
             int i=1; // Lua indexes start with 1 as a general convention
-            std::list<std::string>::iterator it = (*mit).begin();
+            std::list<QString>::iterator it = (*mit).begin();
             for( ; it!=(*mit).end(); it++, i++ )
             {
                 lua_pushnumber( L, i );
-                lua_pushstring( L, (*it).c_str() );
+                lua_pushstring( L, (*it).toUtf8().data() );
                 lua_settable( L, -3 );//match in matches
             }
             lua_settable( L, -3 );//matches in regex

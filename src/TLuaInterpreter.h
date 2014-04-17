@@ -89,8 +89,8 @@ public:
     int check_for_mappingscript( );
     void set_lua_string( const QString & varName, QString & varValue );
     void set_lua_table( QString & tableName, QStringList & variableList );
-    void setCaptureGroups( const std::list<std::string> &, const std::list<int> & );
-    void setMultiCaptureGroups( const std::list< std::list<std::string> > & captureList,
+    void setCaptureGroups( const std::list<QString> &, const std::list<int> & );
+    void setMultiCaptureGroups(const std::list<std::list<QString> > &captureList,
                                 const std::list< std::list<int> > & posList );
 
     void startLuaSessionInterpreter();
@@ -352,9 +352,9 @@ public:
     static int removeMapMenu(lua_State * L);
     static int getMapMenus(lua_State * L);
 
-    std::list<std::string> mCaptureGroupList;
+    std::list<QString> mCaptureGroupList;
     std::list<int> mCaptureGroupPosList;
-    std::list< std::list<std::string> > mMultiCaptureGroupList;
+    std::list< std::list<QString> > mMultiCaptureGroupList;
     std::list< std::list<int> > mMultiCaptureGroupPosList;
     void logError( std::string & e, QString &, QString & function );
 
